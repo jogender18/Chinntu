@@ -133,6 +133,7 @@ if not _DATA_BOUNDARY_BOOTSTRAP:
     from chinntu.cli.tool_cmd import tool
     from chinntu.cli.vault_cmd import vault
     from chinntu.cli.workflow_cmd import workflow
+    from chinntu.cli.wake_word_cmd import wake_word
 
     cli.add_command(init, "init")
     cli.add_command(ask, "ask")
@@ -171,6 +172,7 @@ if not _DATA_BOUNDARY_BOOTSTRAP:
     cli.add_command(config, "config")
     cli.add_command(connect, "connect")
     cli.add_command(digest, "digest")
+    cli.add_command(wake_word, "wake-word")
 
     # Deep Research setup pulls the ingestion pipeline (embeddings/numpy). Guard
     # it so an import-time dependency failure cannot take down the whole CLI.

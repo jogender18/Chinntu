@@ -61,6 +61,19 @@ Keep that command running, then say “Hey Chinntu” followed by your question.
 uses the configured speech-to-text and text-to-speech backends; it does not listen
 when Chinntu is closed.
 
+On Windows, start it automatically when you sign in:
+
+```powershell
+uv run chinntu wake-word --install --model llama3.2:3b
+```
+
+After the next sign-in, say “Hey Chinntu” without opening a terminal. Remove the
+startup listener with:
+
+```powershell
+uv run chinntu wake-word --uninstall
+```
+
 Platform-specific notes (WSL2 setup, native-Windows scheduled-task service, desktop prerequisites, manual / contributor install): see the [installation docs](https://open-jarvis.github.io/OpenJarvis/getting-started/install/).
 
 ## Quick Start
