@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from openjarvis.learning._stubs import RoutingContext
-from openjarvis.learning.routing.heuristic_reward import HeuristicRewardFunction
+from chinntu.learning._stubs import RoutingContext
+from chinntu.learning.routing.heuristic_reward import HeuristicRewardFunction
 
 
 class TestHeuristicRewardFunction:

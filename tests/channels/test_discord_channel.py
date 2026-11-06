@@ -11,10 +11,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openjarvis.channels._stubs import ChannelStatus
-from openjarvis.channels.discord_channel import DiscordChannel
-from openjarvis.core.events import EventBus, EventType
-from openjarvis.core.registry import ChannelRegistry
+from chinntu.channels._stubs import ChannelStatus
+from chinntu.channels.discord_channel import DiscordChannel
+from chinntu.core.events import EventBus, EventType
+from chinntu.core.registry import ChannelRegistry
 from tests.channels.channel_test_helpers import make_common_channel_tests
 
 
@@ -257,7 +257,7 @@ class TestDisconnectStopsRealListener:
         with (
             patch.dict(sys.modules, {"discord": discord}),
             patch(
-                "openjarvis.channels.discord_channel.asyncio.new_event_loop",
+                "chinntu.channels.discord_channel.asyncio.new_event_loop",
                 side_effect=make_event_loop,
             ),
         ):
@@ -336,7 +336,7 @@ class TestDisconnectStopsRealListener:
         with (
             patch.dict(sys.modules, {"discord": discord}),
             patch(
-                "openjarvis.channels.discord_channel.asyncio.new_event_loop",
+                "chinntu.channels.discord_channel.asyncio.new_event_loop",
                 side_effect=make_event_loop,
             ),
         ):
@@ -379,22 +379,22 @@ class TestDisconnectStopsRealListener:
 
 class TestWireChannelEndToEnd:
     """Regression for #515/#516 — the full inbound→reply path through
-    JarvisSystem.wire_channel must call the real Discord REST API with the
+    ChinntuSystem.wire_channel must call the real Discord REST API with the
     numeric channel id (not "discord") and a message_reference equal to the
     inbound message id (not the channel id).
     """
 
     def test_reply_hits_real_channel_id_and_message_reference(self, tmp_path):
-        from openjarvis.channels._stubs import ChannelMessage
-        from openjarvis.core.config import JarvisConfig
-        from openjarvis.core.events import EventBus
-        from openjarvis.system import JarvisSystem
+        from chinntu.channels._stubs import ChannelMessage
+        from chinntu.core.config import ChinntuConfig
+        from chinntu.core.events import EventBus
+        from chinntu.system import ChinntuSystem
 
-        config = JarvisConfig()
+        config = ChinntuConfig()
         config.sessions.db_path = str(tmp_path / "sessions.db")
         from unittest.mock import MagicMock as _MM
 
-        system = JarvisSystem(
+        system = ChinntuSystem(
             config=config,
             bus=EventBus(record_history=False),
             engine=_MM(),

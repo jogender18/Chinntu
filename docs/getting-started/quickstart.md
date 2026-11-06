@@ -1,95 +1,95 @@
 ---
 title: Quick Start
-description: Get up and running with OpenJarvis in minutes
+description: Get up and running with Chinntu in minutes
 search:
   boost: 3
 ---
 
 # Quick Start
 
-!!! tip "Running `jarvis` commands"
-    Every `jarvis ...` example below assumes you have either activated the project venv
+!!! tip "Running `chinntu` commands"
+    Every `chinntu ...` example below assumes you have either activated the project venv
     (`source .venv/bin/activate`) or are prefixing each command with `uv run`. A bare
-    `jarvis init --preset ...` from a fresh clone will fail with `command not found`.
+    `chinntu init --preset ...` from a fresh clone will fail with `command not found`.
 
 ## What You Can Build
 
-OpenJarvis is a modular AI assistant framework. Here's what developers build with it:
+Chinntu is a modular AI assistant framework. Here's what developers build with it:
 
 === "Chat with Any Model"
 
     ```bash
-    jarvis ask "Explain quantum entanglement" -m qwen3.5:4b   # use qwen3.5:9b or larger on GPU
+    chinntu ask "Explain quantum entanglement" -m qwen3.5:4b   # use qwen3.5:9b or larger on GPU
     ```
 
 === "Agent + Tools"
 
     ```bash
-    jarvis ask --agent orchestrator --tools calculator,web_search "What is the GDP of France in USD?"
+    chinntu ask --agent orchestrator --tools calculator,web_search "What is the GDP of France in USD?"
     ```
 
 === "Index Docs & Ask"
 
     ```bash
-    jarvis memory index ./docs/
-    jarvis ask "How do I configure the engine?"
+    chinntu memory index ./docs/
+    chinntu ask "How do I configure the engine?"
     ```
 
     !!! warning "Requires the Rust extension"
-        `jarvis memory index` and `jarvis memory search` import `openjarvis_rust`. If you
-        skipped the `uv run maturin develop -m rust/crates/openjarvis-python/Cargo.toml`
+        `chinntu memory index` and `chinntu memory search` import `chinntu_rust`. If you
+        skipped the `uv run maturin develop -m rust/crates/chinntu-python/Cargo.toml`
         step in [Installation](installation.md), these commands fail with
-        `ModuleNotFoundError: No module named 'openjarvis_rust'`. Build the extension
+        `ModuleNotFoundError: No module named 'chinntu_rust'`. Build the extension
         once and any preset (including `deep-research`) will work.
 
 === "5-Line Python SDK"
 
     ```python
-    from openjarvis import Jarvis
-    with Jarvis() as j:
+    from chinntu import Chinntu
+    with Chinntu() as j:
         print(j.ask("Hello!"))
     ```
 
 === "API Server"
 
     ```bash
-    jarvis serve --port 8000
+    chinntu serve --port 8000
     # Now use any OpenAI-compatible client
     ```
 
 === "Morning Digest"
 
     ```bash
-    cp configs/openjarvis/examples/morning-digest-mac.toml ~/.openjarvis/config.toml
-    jarvis connect gdrive       # one OAuth flow for Gmail, Calendar, Tasks
-    CARTESIA_API_KEY="..." jarvis digest --fresh
+    cp configs/chinntu/examples/morning-digest-mac.toml ~/.chinntu/config.toml
+    chinntu connect gdrive       # one OAuth flow for Gmail, Calendar, Tasks
+    CARTESIA_API_KEY="..." chinntu digest --fresh
     # Plays a spoken daily briefing with your email, calendar, health, and news
     ```
 
 === "Deep Research"
 
     ```bash
-    jarvis init --preset deep-research --force
-    jarvis memory index ~/Documents/papers/
-    jarvis ask "Summarize all documents about transformer architectures"
+    chinntu init --preset deep-research --force
+    chinntu memory index ~/Documents/papers/
+    chinntu ask "Summarize all documents about transformer architectures"
     # Multi-hop search across your indexed docs with citations
     ```
 
 === "Code Assistant"
 
     ```bash
-    jarvis init --preset code-assistant --force
-    jarvis ask "Write a Python script that parses CSV files"
+    chinntu init --preset code-assistant --force
+    chinntu ask "Write a Python script that parses CSV files"
     # Orchestrator agent with code execution, file I/O, and shell access
     ```
 
 === "Scheduled Monitor"
 
     ```bash
-    jarvis init --preset scheduled-monitor --force
-    jarvis memory index ~/Documents/
-    jarvis scheduler start
-    jarvis scheduler create \
+    chinntu init --preset scheduled-monitor --force
+    chinntu memory index ~/Documents/
+    chinntu scheduler start
+    chinntu scheduler create \
       --prompt "Check for new emails about Project X" \
       --schedule "0 9 * * 1-5" --agent operative
     # Persistent agent that runs on a cron schedule
@@ -99,36 +99,36 @@ For complete copy-paste patterns, see [Code Snippets](snippets.md).
 
 ## Starter Configs
 
-Copy one of these to `~/.openjarvis/config.toml` to get a pre-configured setup:
+Copy one of these to `~/.chinntu/config.toml` to get a pre-configured setup:
 
 | Config | For | What it does |
 |--------|-----|-------------|
-| [`chat-simple.toml`](https://github.com/open-jarvis/OpenJarvis/blob/main/configs/openjarvis/examples/chat-simple.toml) | Any machine | Lightweight chat, no tools -- simplest setup |
-| [`code-assistant.toml`](https://github.com/open-jarvis/OpenJarvis/blob/main/configs/openjarvis/examples/code-assistant.toml) | Any machine | Orchestrator agent with code execution, file I/O, shell |
-| [`deep-research.toml`](https://github.com/open-jarvis/OpenJarvis/blob/main/configs/openjarvis/examples/deep-research.toml) | Any machine | Multi-hop research across indexed documents with citations |
-| [`scheduled-monitor.toml`](https://github.com/open-jarvis/OpenJarvis/blob/main/configs/openjarvis/examples/scheduled-monitor.toml) | Any machine | Persistent operative agent on a cron schedule |
-| [`morning-digest-mac.toml`](https://github.com/open-jarvis/OpenJarvis/blob/main/configs/openjarvis/examples/morning-digest-mac.toml) | Mac (Apple Silicon) | Daily spoken briefing from email, calendar, health, news |
-| [`morning-digest-linux.toml`](https://github.com/open-jarvis/OpenJarvis/blob/main/configs/openjarvis/examples/morning-digest-linux.toml) | Linux / GPU server | Same, with vLLM support |
-| [`morning-digest-minimal.toml`](https://github.com/open-jarvis/OpenJarvis/blob/main/configs/openjarvis/examples/morning-digest-minimal.toml) | Any machine | Just Gmail + Calendar |
+| [`chat-simple.toml`](https://github.com/jogender18/Chinntu/blob/main/configs/chinntu/examples/chat-simple.toml) | Any machine | Lightweight chat, no tools -- simplest setup |
+| [`code-assistant.toml`](https://github.com/jogender18/Chinntu/blob/main/configs/chinntu/examples/code-assistant.toml) | Any machine | Orchestrator agent with code execution, file I/O, shell |
+| [`deep-research.toml`](https://github.com/jogender18/Chinntu/blob/main/configs/chinntu/examples/deep-research.toml) | Any machine | Multi-hop research across indexed documents with citations |
+| [`scheduled-monitor.toml`](https://github.com/jogender18/Chinntu/blob/main/configs/chinntu/examples/scheduled-monitor.toml) | Any machine | Persistent operative agent on a cron schedule |
+| [`morning-digest-mac.toml`](https://github.com/jogender18/Chinntu/blob/main/configs/chinntu/examples/morning-digest-mac.toml) | Mac (Apple Silicon) | Daily spoken briefing from email, calendar, health, news |
+| [`morning-digest-linux.toml`](https://github.com/jogender18/Chinntu/blob/main/configs/chinntu/examples/morning-digest-linux.toml) | Linux / GPU server | Same, with vLLM support |
+| [`morning-digest-minimal.toml`](https://github.com/jogender18/Chinntu/blob/main/configs/chinntu/examples/morning-digest-minimal.toml) | Any machine | Just Gmail + Calendar |
 
 Or generate a config with digest included:
 
 ```bash
-jarvis init --digest
+chinntu init --digest
 ```
 
-This guide walks through the core workflows of OpenJarvis: the browser app, CLI, Python SDK, agents with tools, memory, benchmarks, and the API server.
+This guide walks through the core workflows of Chinntu: the browser app, CLI, Python SDK, agents with tools, memory, benchmarks, and the API server.
 
 !!! info "Prerequisites"
-    Make sure you have [installed OpenJarvis](installation.md) and have at least one inference backend running (e.g., `ollama serve`).
+    Make sure you have [installed Chinntu](installation.md) and have at least one inference backend running (e.g., `ollama serve`).
 
 ## Browser App
 
-The quickest way to experience OpenJarvis is the full chat UI running in your browser:
+The quickest way to experience Chinntu is the full chat UI running in your browser:
 
 ```bash
-git clone https://github.com/open-jarvis/OpenJarvis.git
-cd OpenJarvis
+git clone https://github.com/jogender18/Chinntu.git
+cd Chinntu
 ./scripts/quickstart.sh
 ```
 
@@ -145,11 +145,11 @@ starting quickstart:
 ```bash
 export YOUDOTCOM_API_KEY="..."   # free key: https://you.com/platform
 export SERPLY_API_KEY="..."      # free tier: https://serply.io
-export FIRECRAWL_API_KEY="..."   # free tier: https://www.firecrawl.dev/app/api-keys?utm_source=openjarvis&utm_medium=integration
+export FIRECRAWL_API_KEY="..."   # free tier: https://www.firecrawl.dev/app/api-keys?utm_source=chinntu&utm_medium=integration
 ./scripts/quickstart.sh
 ```
 
-Set `OPENJARVIS_WEB_SEARCH_ENGINE` to pick an engine explicitly — `youcom`,
+Set `CHINNTU_WEB_SEARCH_ENGINE` to pick an engine explicitly — `youcom`,
 `tavily`, `serply`, `firecrawl`, or `duckduckgo`. The default, `auto`, uses
 Tavily when `TAVILY_API_KEY` is set, then You.com, then Serply, then Firecrawl,
 and settles on the You.com keyless tier when no key is set at all. DuckDuckGo
@@ -171,26 +171,26 @@ pages and PDFs. Set `FIRECRAWL_API_URL` to use a
 instead of the hosted API; no key is needed if your instance runs without
 auth. Page fetches then run on your instance, and search queries go on to the
 search backend it is configured with. Keys:
-[firecrawl.dev](https://www.firecrawl.dev/app/api-keys?utm_source=openjarvis&utm_medium=integration).
+[firecrawl.dev](https://www.firecrawl.dev/app/api-keys?utm_source=chinntu&utm_medium=integration).
 
 The script does not automatically source `.env` files. Run `source .env`
-first if that is where you keep the key. Stop any existing OpenJarvis server
+first if that is where you keep the key. Stop any existing Chinntu server
 before restarting so it inherits the updated environment.
 
 To stop all services, press ++ctrl+c++ in the terminal.
 
 !!! tip "Environment variable"
-    Set `OPENJARVIS_MODEL` to change the default model: `OPENJARVIS_MODEL=deepseek-r1:14b ./scripts/quickstart.sh`
+    Set `CHINNTU_MODEL` to change the default model: `CHINNTU_MODEL=deepseek-r1:14b ./scripts/quickstart.sh`
 
 ## Initialize Configuration
 
 Start by detecting your hardware and generating a configuration file:
 
 ```bash
-jarvis init
+chinntu init
 ```
 
-This runs hardware auto-detection (GPU vendor, VRAM, CPU, RAM) and writes a config file to `~/.openjarvis/config.toml` with sensible defaults for your system. It also selects the recommended inference engine.
+This runs hardware auto-detection (GPU vendor, VRAM, CPU, RAM) and writes a config file to `~/.chinntu/config.toml` with sensible defaults for your system. It also selects the recommended inference engine.
 
 ```
 Detecting hardware...
@@ -205,7 +205,7 @@ Config written successfully.
 To overwrite an existing config:
 
 ```bash
-jarvis init --force
+chinntu init --force
 ```
 
 See [Configuration](configuration.md) for the full config reference.
@@ -214,37 +214,37 @@ See [Configuration](configuration.md) for the full config reference.
 
 ### Via CLI
 
-The simplest way to interact with OpenJarvis is the `ask` command:
+The simplest way to interact with Chinntu is the `ask` command:
 
 ```bash
-jarvis ask "What is the capital of France?"
+chinntu ask "What is the capital of France?"
 ```
 
-OpenJarvis will auto-detect a running engine, select a model using the configured router policy, and return the response.
+Chinntu will auto-detect a running engine, select a model using the configured router policy, and return the response.
 
 #### CLI Options
 
 | Option | Description | Example |
 |--------|-------------|---------|
-| `-m`, `--model` | Override model selection | `jarvis ask -m qwen3:8b "Hello"` |
-| `-e`, `--engine` | Force a specific engine | `jarvis ask -e ollama "Hello"` |
-| `-t`, `--temperature` | Sampling temperature (default: 0.7) | `jarvis ask -t 0.2 "Hello"` |
-| `--max-tokens` | Max tokens to generate (default: 1024) | `jarvis ask --max-tokens 2048 "Hello"` |
-| `--json` | Output raw JSON result | `jarvis ask --json "Hello"` |
-| `--no-stream` | Disable streaming | `jarvis ask --no-stream "Hello"` |
-| `--no-context` | Disable memory context injection | `jarvis ask --no-context "Hello"` |
-| `-a`, `--agent` | Use an agent | `jarvis ask -a orchestrator "Hello"` |
-| `--tools` | Comma-separated tools | `jarvis ask --tools calculator,think "2+2"` |
-| `--router` | Router policy for model selection | `jarvis ask --router heuristic "Hello"` |
+| `-m`, `--model` | Override model selection | `chinntu ask -m qwen3:8b "Hello"` |
+| `-e`, `--engine` | Force a specific engine | `chinntu ask -e ollama "Hello"` |
+| `-t`, `--temperature` | Sampling temperature (default: 0.7) | `chinntu ask -t 0.2 "Hello"` |
+| `--max-tokens` | Max tokens to generate (default: 1024) | `chinntu ask --max-tokens 2048 "Hello"` |
+| `--json` | Output raw JSON result | `chinntu ask --json "Hello"` |
+| `--no-stream` | Disable streaming | `chinntu ask --no-stream "Hello"` |
+| `--no-context` | Disable memory context injection | `chinntu ask --no-context "Hello"` |
+| `-a`, `--agent` | Use an agent | `chinntu ask -a orchestrator "Hello"` |
+| `--tools` | Comma-separated tools | `chinntu ask --tools calculator,think "2+2"` |
+| `--router` | Router policy for model selection | `chinntu ask --router heuristic "Hello"` |
 
 ### Via Python SDK
 
-The `Jarvis` class provides a high-level Python interface:
+The `Chinntu` class provides a high-level Python interface:
 
 ```python
-from openjarvis import Jarvis
+from chinntu import Chinntu
 
-j = Jarvis()
+j = Chinntu()
 response = j.ask("What is the capital of France?")
 print(response)
 j.close()
@@ -263,21 +263,21 @@ print(result["usage"])    # Token usage statistics
 #### SDK Constructor Options
 
 ```python
-# Use default config (auto-detected hardware, ~/.openjarvis/config.toml)
-j = Jarvis()
+# Use default config (auto-detected hardware, ~/.chinntu/config.toml)
+j = Chinntu()
 
 # Override the model
-j = Jarvis(model="qwen3:8b")
+j = Chinntu(model="qwen3:8b")
 
 # Override the engine
-j = Jarvis(engine_key="ollama")
+j = Chinntu(engine_key="ollama")
 
 # Use a custom config file
-j = Jarvis(config_path="/path/to/config.toml")
+j = Chinntu(config_path="/path/to/config.toml")
 ```
 
 !!! warning "Always call `close()`"
-    The `Jarvis` instance holds references to telemetry stores and memory backends. Call `j.close()` when you are done to release resources.
+    The `Chinntu` instance holds references to telemetry stores and memory backends. Call `j.close()` when you are done to release resources.
 
 ## Using Agents with Tools
 
@@ -306,15 +306,15 @@ Agents add multi-turn reasoning and tool-calling capabilities. The `orchestrator
 ### CLI Example
 
 ```bash
-jarvis ask --agent orchestrator --tools calculator,think "What is 137 * 42?"
+chinntu ask --agent orchestrator --tools calculator,think "What is 137 * 42?"
 ```
 
 ### SDK Example
 
 ```python
-from openjarvis import Jarvis
+from chinntu import Chinntu
 
-j = Jarvis()
+j = Chinntu()
 result = j.ask_full(
     "What is the square root of 144?",
     agent="orchestrator",
@@ -332,24 +332,24 @@ The memory system lets you index documents and inject relevant context into quer
 
 ### Index Documents
 
-Index a file or directory. OpenJarvis chunks the content and stores it in the configured memory backend (SQLite/FTS5 by default).
+Index a file or directory. Chinntu chunks the content and stores it in the configured memory backend (SQLite/FTS5 by default).
 
 === "CLI"
 
     ```bash
     # Index a directory
-    jarvis memory index ./docs/
+    chinntu memory index ./docs/
 
     # Index a single file with custom chunk size
-    jarvis memory index ./paper.txt --chunk-size 256 --chunk-overlap 32
+    chinntu memory index ./paper.txt --chunk-size 256 --chunk-overlap 32
     ```
 
 === "Python SDK"
 
     ```python
-    from openjarvis import Jarvis
+    from chinntu import Chinntu
 
-    j = Jarvis()
+    j = Chinntu()
     result = j.memory.index("./docs/", chunk_size=512, chunk_overlap=64)
     print(f"Indexed {result['chunks']} chunks")
     j.close()
@@ -362,8 +362,8 @@ Query the memory store to find relevant chunks:
 === "CLI"
 
     ```bash
-    jarvis memory search "configuration options"
-    jarvis memory search -k 10 "how to deploy"
+    chinntu memory search "configuration options"
+    chinntu memory search -k 10 "how to deploy"
     ```
 
 === "Python SDK"
@@ -379,7 +379,7 @@ Query the memory store to find relevant chunks:
 === "CLI"
 
     ```bash
-    jarvis memory stats
+    chinntu memory stats
     ```
 
 === "Python SDK"
@@ -391,14 +391,14 @@ Query the memory store to find relevant chunks:
 
 ### Automatic Context Injection
 
-When you have indexed documents, OpenJarvis automatically injects relevant context into your queries. The memory system searches for chunks matching your query and prepends them as system context before sending to the model.
+When you have indexed documents, Chinntu automatically injects relevant context into your queries. The memory system searches for chunks matching your query and prepends them as system context before sending to the model.
 
 To disable this behavior:
 
 === "CLI"
 
     ```bash
-    jarvis ask --no-context "Hello"
+    chinntu ask --no-context "Hello"
     ```
 
 === "Python SDK"
@@ -416,7 +416,7 @@ Context injection is controlled by `agent.context_from_memory` in `config.toml`.
 See all models available on running engines:
 
 ```bash
-jarvis model list
+chinntu model list
 ```
 
 This produces a table showing each model, its engine, parameter count, context length, and VRAM requirements.
@@ -424,21 +424,21 @@ This produces a table showing each model, its engine, parameter count, context l
 ### Get Model Details
 
 ```bash
-jarvis model info qwen3:8b
+chinntu model info qwen3:8b
 ```
 
 ### Pull a Model (Ollama)
 
 ```bash
-jarvis model pull qwen3:8b
+chinntu model pull qwen3:8b
 ```
 
 ### SDK Model Listing
 
 ```python
-from openjarvis import Jarvis
+from chinntu import Chinntu
 
-j = Jarvis()
+j = Chinntu()
 models = j.list_models()
 engines = j.list_engines()
 print(f"Models: {models}")
@@ -453,24 +453,24 @@ The benchmarking framework measures inference latency and throughput against you
 === "All benchmarks"
 
     ```bash
-    jarvis bench run
+    chinntu bench run
     ```
 
 === "Specific benchmark"
 
     ```bash
-    jarvis bench run -b latency
-    jarvis bench run -b throughput
+    chinntu bench run -b latency
+    chinntu bench run -b throughput
     ```
 
 === "Custom options"
 
     ```bash
     # 20 samples, JSON output
-    jarvis bench run -n 20 --json
+    chinntu bench run -n 20 --json
 
     # Specific model and engine, write to file
-    jarvis bench run -m qwen3:8b -e ollama -o results.jsonl
+    chinntu bench run -m qwen3:8b -e ollama -o results.jsonl
     ```
 
 Example output:
@@ -493,7 +493,7 @@ throughput (10 samples, 0 errors)
 
 ## Starting the API Server
 
-OpenJarvis provides an OpenAI-compatible API server for integration with existing tools and frontends.
+Chinntu provides an OpenAI-compatible API server for integration with existing tools and frontends.
 
 !!! note "Requires the `server` extra"
     ```bash
@@ -503,13 +503,13 @@ OpenJarvis provides an OpenAI-compatible API server for integration with existin
 ### Start the Server
 
 ```bash
-jarvis serve --port 8000
+chinntu serve --port 8000
 ```
 
 With custom options:
 
 ```bash
-jarvis serve --host 0.0.0.0 --port 8000 --engine ollama --model qwen3:8b --agent orchestrator
+chinntu serve --host 0.0.0.0 --port 8000 --engine ollama --model qwen3:8b --agent orchestrator
 ```
 
 ### API Endpoints
@@ -548,23 +548,23 @@ curl http://localhost:8000/v1/chat/completions \
 
 ## Telemetry
 
-OpenJarvis records telemetry for every inference call (timing, tokens, cost). View aggregated statistics:
+Chinntu records telemetry for every inference call (timing, tokens, cost). View aggregated statistics:
 
 ```bash
-jarvis telemetry stats
+chinntu telemetry stats
 ```
 
 Export telemetry data:
 
 ```bash
-jarvis telemetry export --format json
-jarvis telemetry export --format csv -o telemetry.csv
+chinntu telemetry export --format json
+chinntu telemetry export --format csv -o telemetry.csv
 ```
 
 Clear all telemetry records:
 
 ```bash
-jarvis telemetry clear --yes
+chinntu telemetry clear --yes
 ```
 
 ## Complete Working Example
@@ -572,10 +572,10 @@ jarvis telemetry clear --yes
 Here is a complete end-to-end session combining multiple features:
 
 ```python
-from openjarvis import Jarvis
+from chinntu import Chinntu
 
 # Initialize with defaults (auto-detect hardware and engine)
-j = Jarvis()
+j = Chinntu()
 
 # 1. Index some documentation
 index_result = j.memory.index("./docs/", chunk_size=512)

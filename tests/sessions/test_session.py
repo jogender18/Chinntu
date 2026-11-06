@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from openjarvis.sessions.session import (
+from chinntu.sessions.session import (
     Session,
     SessionIdentity,
     SessionStore,

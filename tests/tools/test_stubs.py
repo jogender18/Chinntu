@@ -6,11 +6,11 @@ import json
 
 import pytest
 
-from openjarvis.core.events import EventBus, EventType
-from openjarvis.core.types import ToolCall, ToolResult
-from openjarvis.security.capabilities import DEFAULT_TOOL_CAPABILITIES
-from openjarvis.tools._stubs import BaseTool, ToolExecutor, ToolSpec
-from openjarvis.tools.code_interpreter import CodeInterpreterTool
+from chinntu.core.events import EventBus, EventType
+from chinntu.core.types import ToolCall, ToolResult
+from chinntu.security.capabilities import DEFAULT_TOOL_CAPABILITIES
+from chinntu.tools._stubs import BaseTool, ToolExecutor, ToolSpec
+from chinntu.tools.code_interpreter import CodeInterpreterTool
 
 # ---------------------------------------------------------------------------
 # Helpers

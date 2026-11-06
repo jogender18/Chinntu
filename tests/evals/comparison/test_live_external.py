@@ -3,7 +3,7 @@
 Requires:
 - $HERMES_AGENT_PATH set and pointing to the pinned commit
 - $OPENCLAW_PATH set and pointing to the pinned commit
-- An OpenAI-compatible mock server reachable at $JARVIS_MOCK_LLM_URL
+- An OpenAI-compatible mock server reachable at $CHINNTU_MOCK_LLM_URL
 
 Skipped by default. Run via:
     uv run pytest tests/evals/comparison/test_live_external.py -m live_external -v
@@ -36,7 +36,7 @@ class TestLiveExternal:
     def test_hermes_runner_emits_valid_json(self, tmp_path: Path) -> None:
         runner = (
             Path(__file__).resolve().parents[3]
-            / "src/openjarvis/evals/backends/external/_runners/hermes_runner.py"
+            / "src/chinntu/evals/backends/external/_runners/hermes_runner.py"
         )
         out_json = tmp_path / "out.json"
         env = dict(os.environ)
@@ -74,7 +74,7 @@ class TestLiveExternal:
     def test_openclaw_runner_emits_valid_json(self, tmp_path: Path) -> None:
         runner = (
             Path(__file__).resolve().parents[3]
-            / "src/openjarvis/evals/backends/external/_runners/openclaw_runner.mjs"
+            / "src/chinntu/evals/backends/external/_runners/openclaw_runner.mjs"
         )
         if not runner.exists():
             pytest.skip("openclaw_runner.mjs not present")

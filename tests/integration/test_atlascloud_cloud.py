@@ -10,9 +10,9 @@ import os
 
 import pytest
 
-from openjarvis.core.registry import EngineRegistry
-from openjarvis.core.types import Message, Role
-from openjarvis.engine.cloud import _ATLASCLOUD_POPULAR, CloudEngine
+from chinntu.core.registry import EngineRegistry
+from chinntu.core.types import Message, Role
+from chinntu.engine.cloud import _ATLASCLOUD_POPULAR, CloudEngine
 
 _ATLASCLOUD_KEY = os.environ.get("ATLASCLOUD_API_KEY", "")
 _skip_no_key = pytest.mark.skipif(

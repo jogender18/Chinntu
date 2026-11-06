@@ -7,10 +7,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openjarvis.channels._stubs import ChannelStatus
-from openjarvis.channels.feishu import FeishuChannel
-from openjarvis.core.events import EventBus, EventType
-from openjarvis.core.registry import ChannelRegistry
+from chinntu.channels._stubs import ChannelStatus
+from chinntu.channels.feishu import FeishuChannel
+from chinntu.core.events import EventBus, EventType
+from chinntu.core.registry import ChannelRegistry
 from tests.channels.channel_test_helpers import make_common_channel_tests
 
 

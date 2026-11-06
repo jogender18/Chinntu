@@ -6,11 +6,11 @@ import threading
 import time
 from unittest.mock import MagicMock
 
-from openjarvis.agents._stubs import AgentContext
-from openjarvis.agents.orchestrator import OrchestratorAgent
-from openjarvis.core.events import EventBus, EventType
-from openjarvis.core.types import Conversation, Message, Role, ToolResult
-from openjarvis.tools._stubs import BaseTool, ToolSpec
+from chinntu.agents._stubs import AgentContext
+from chinntu.agents.orchestrator import OrchestratorAgent
+from chinntu.core.events import EventBus, EventType
+from chinntu.core.types import Conversation, Message, Role, ToolResult
+from chinntu.tools._stubs import BaseTool, ToolSpec
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -1,0 +1,11 @@
+[package]
+name = "chinntu-skills"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chinntu-core = { path = "../chinntu-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+ed25519-dalek = { workspace = true }

@@ -9,8 +9,8 @@ from unittest.mock import Mock
 import httpx
 import pytest
 
-from openjarvis.speech import elevenlabs_tts
-from openjarvis.speech.elevenlabs_tts import ElevenLabsTTSBackend
+from chinntu.speech import elevenlabs_tts
+from chinntu.speech.elevenlabs_tts import ElevenLabsTTSBackend
 
 _KEY = "sk_" + "a" * 48
 

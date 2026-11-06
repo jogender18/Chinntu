@@ -1,0 +1,32 @@
+[package]
+name = "chinntu-python"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "chinntu_rust"
+crate-type = ["cdylib"]
+
+[dependencies]
+chinntu-core = { path = "../chinntu-core" }
+chinntu-engine = { path = "../chinntu-engine" }
+chinntu-security = { path = "../chinntu-security" }
+chinntu-tools = { path = "../chinntu-tools" }
+chinntu-agents = { path = "../chinntu-agents" }
+chinntu-traces = { path = "../chinntu-traces" }
+chinntu-telemetry = { path = "../chinntu-telemetry" }
+chinntu-learning = { path = "../chinntu-learning" }
+chinntu-mcp = { path = "../chinntu-mcp" }
+chinntu-sessions = { path = "../chinntu-sessions" }
+chinntu-workflow = { path = "../chinntu-workflow" }
+chinntu-skills = { path = "../chinntu-skills" }
+chinntu-recipes = { path = "../chinntu-recipes" }
+chinntu-templates = { path = "../chinntu-templates" }
+chinntu-a2a = { path = "../chinntu-a2a" }
+chinntu-scheduler = { path = "../chinntu-scheduler" }
+pyo3 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }

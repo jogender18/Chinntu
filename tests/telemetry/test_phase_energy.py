@@ -8,11 +8,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from openjarvis.core.events import EventBus, EventType
-from openjarvis.core.types import Message, Role, TelemetryRecord
-from openjarvis.telemetry.aggregator import TelemetryAggregator
-from openjarvis.telemetry.instrumented_engine import InstrumentedEngine
-from openjarvis.telemetry.store import TelemetryStore
+from chinntu.core.events import EventBus, EventType
+from chinntu.core.types import Message, Role, TelemetryRecord
+from chinntu.telemetry.aggregator import TelemetryAggregator
+from chinntu.telemetry.instrumented_engine import InstrumentedEngine
+from chinntu.telemetry.store import TelemetryStore
 
 # ---------------------------------------------------------------------------
 # Helpers

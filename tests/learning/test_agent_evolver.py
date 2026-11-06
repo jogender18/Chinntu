@@ -13,9 +13,9 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
-from openjarvis.core.types import StepType, Trace, TraceStep
-from openjarvis.learning.agents.agent_evolver import AgentConfigEvolver
-from openjarvis.traces.store import TraceStore
+from chinntu.core.types import StepType, Trace, TraceStep
+from chinntu.learning.agents.agent_evolver import AgentConfigEvolver
+from chinntu.traces.store import TraceStore
 
 # ---------------------------------------------------------------------------
 # Helpers

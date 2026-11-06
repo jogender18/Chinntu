@@ -6,12 +6,12 @@ from collections import Counter
 
 import pytest
 
-from openjarvis.agents import tool_resolver
-from openjarvis.connectors.store import KnowledgeStore
-from openjarvis.core.registry import ToolRegistry
-from openjarvis.core.types import ToolResult
-from openjarvis.tools import description_loader
-from openjarvis.tools._stubs import BaseTool, ToolSpec
+from chinntu.agents import tool_resolver
+from chinntu.connectors.store import KnowledgeStore
+from chinntu.core.registry import ToolRegistry
+from chinntu.core.types import ToolResult
+from chinntu.tools import description_loader
+from chinntu.tools._stubs import BaseTool, ToolSpec
 
 
 class _AlphaTool(BaseTool):
@@ -157,12 +157,12 @@ def test_configured_tools_normalize_lists_and_comma_separated_strings(
 def test_managed_file_tools_use_application_policy(
     tmp_path, monkeypatch, custom_spec, invalid_policy
 ):
-    from openjarvis.core.config import JarvisConfig
-    from openjarvis.tools.file_read import FileReadTool
+    from chinntu.core.config import ChinntuConfig
+    from chinntu.tools.file_read import FileReadTool
 
-    cfg = JarvisConfig()
+    cfg = ChinntuConfig()
     cfg.security.allowed_dirs = None if invalid_policy else [str(tmp_path / "allowed")]
-    monkeypatch.setattr("openjarvis.core.config.load_config", lambda: JarvisConfig())
+    monkeypatch.setattr("chinntu.core.config.load_config", lambda: ChinntuConfig())
     ToolRegistry.register_value("file_read", FileReadTool)
     entry = (
         {"type": "function", "function": {"name": "file_read"}}

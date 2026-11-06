@@ -8,11 +8,11 @@ from unittest.mock import patch
 
 import pytest
 
-from openjarvis.agents._stubs import AgentResult
-from openjarvis.core.config import JarvisConfig
-from openjarvis.core.events import EventBus
-from openjarvis.core.types import Message, Role
-from openjarvis.system import QueryOrchestrator
+from chinntu.agents._stubs import AgentResult
+from chinntu.core.config import ChinntuConfig
+from chinntu.core.events import EventBus
+from chinntu.core.types import Message, Role
+from chinntu.system import QueryOrchestrator
 
 
 class _FakeEngine:
@@ -39,7 +39,7 @@ class _FakeEngine:
 class _FakeSystem:
     """Minimum surface QueryOrchestrator reads — no subsystems wired."""
 
-    config: JarvisConfig = field(default_factory=JarvisConfig)
+    config: ChinntuConfig = field(default_factory=ChinntuConfig)
     bus: EventBus = field(default_factory=EventBus)
     engine: Any = None
     engine_key: str = "fake"
@@ -79,7 +79,7 @@ class TestAskDirectEngineMode:
 
     def test_uses_config_defaults_when_omitted(self):
         engine = _FakeEngine({"content": ""})
-        config = JarvisConfig()
+        config = ChinntuConfig()
         config.intelligence.temperature = 0.42
         config.intelligence.max_tokens = 77
         system = _FakeSystem(config=config, engine=engine)
@@ -124,7 +124,7 @@ class TestDetectAgentIntent:
         ],
     )
     def test_morning_digest_triggers(self, query):
-        from openjarvis.core.registry import AgentRegistry
+        from chinntu.core.registry import AgentRegistry
 
         # Register a stub so the intent check returns the name.
         try:
@@ -163,7 +163,7 @@ class TestRunAgentPersonaWiring:
                 return AgentResult(content="hi", turns=1)
 
         orch = QueryOrchestrator(_FakeSystem())
-        with patch("openjarvis.core.registry.AgentRegistry.get", return_value=_Agent):
+        with patch("chinntu.core.registry.AgentRegistry.get", return_value=_Agent):
             orch._run_agent(
                 "hi",
                 [Message(role=Role.USER, content="hi")],

@@ -10,10 +10,10 @@ import httpx
 import pytest
 import respx
 
-from openjarvis.core.registry import EngineRegistry
-from openjarvis.core.types import Message, Role
-from openjarvis.engine._base import EngineConnectionError
-from openjarvis.engine.openai_compat_engines import LemonadeEngine
+from chinntu.core.registry import EngineRegistry
+from chinntu.core.types import Message, Role
+from chinntu.engine._base import EngineConnectionError
+from chinntu.engine.openai_compat_engines import LemonadeEngine
 
 
 @pytest.fixture()

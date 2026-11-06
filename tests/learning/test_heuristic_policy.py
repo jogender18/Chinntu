@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from openjarvis.core.registry import RouterPolicyRegistry
-from openjarvis.learning.routing.heuristic_policy import ensure_registered
-from openjarvis.learning.routing.router import HeuristicRouter
+from chinntu.core.registry import RouterPolicyRegistry
+from chinntu.learning.routing.heuristic_policy import ensure_registered
+from chinntu.learning.routing.router import HeuristicRouter
 
 
 class TestHeuristicPolicy:

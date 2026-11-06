@@ -114,9 +114,9 @@ struct BootPlan {
     model_to_pull: Option<String>,
     /// Optional `(engine_key, bare_host)` override for a custom endpoint,
     /// e.g. `("lmstudio", "http://localhost:1234")`. Written into
-    /// ~/.openjarvis/config.toml so `jarvis serve` picks it up.
+    /// ~/.chinntu/config.toml so `chinntu serve` picks it up.
     engine_host: Option<(String, String)>,
-    /// Args appended after `uv run jarvis serve --port <port>`.
+    /// Args appended after `uv run chinntu serve --port <port>`.
     serve_args: Vec<String>,
 }
 
@@ -160,7 +160,7 @@ fn boot_plan(cfg: &InferenceConfig, ram_gb: f64) -> BootPlan {
                 .clone()
                 .filter(|h| !h.is_empty())
                 .map(|h| (engine.clone(), h));
-            // `model` may be empty if the config is malformed; `jarvis serve`
+            // `model` may be empty if the config is malformed; `chinntu serve`
             // surfaces a clear error then (there is no universal default model
             // for an arbitrary endpoint).
             let model = cfg.model.clone().unwrap_or_default();
@@ -284,12 +284,12 @@ fn resolve_bin(name: &str) -> String {
     name.to_string()
 }
 
-/// Find the OpenJarvis project root (contains pyproject.toml).
-/// Checks OPENJARVIS_ROOT env var, the checkout beside the executable,
+/// Find the Chinntu project root (contains pyproject.toml).
+/// Checks CHINNTU_ROOT env var, the checkout beside the executable,
 /// then walks up from the executable before probing common clone locations.
 fn find_project_root() -> Option<std::path::PathBuf> {
     // 1. Explicit env var override
-    if let Ok(root) = std::env::var("OPENJARVIS_ROOT") {
+    if let Ok(root) = std::env::var("CHINNTU_ROOT") {
         let path = std::path::PathBuf::from(&root);
         if path.join("pyproject.toml").exists() {
             return Some(path);
@@ -307,18 +307,18 @@ fn find_project_root() -> Option<std::path::PathBuf> {
     // 3. Fallback: well-known direct paths
     let home = home_dir();
     let direct = [
-        format!("{home}/OpenJarvis"),
-        format!("{home}/projects/hazy/OpenJarvis"),
-        format!("{home}/projects/OpenJarvis"),
-        format!("{home}/src/OpenJarvis"),
-        format!("{home}/Documents/OpenJarvis"),
-        format!("{home}/Desktop/OpenJarvis"),
-        format!("{home}/Developer/OpenJarvis"),
-        format!("{home}/dev/OpenJarvis"),
-        format!("{home}/Code/OpenJarvis"),
-        format!("{home}/code/OpenJarvis"),
-        format!("{home}/repos/OpenJarvis"),
-        format!("{home}/github/OpenJarvis"),
+        format!("{home}/Chinntu"),
+        format!("{home}/projects/hazy/Chinntu"),
+        format!("{home}/projects/Chinntu"),
+        format!("{home}/src/Chinntu"),
+        format!("{home}/Documents/Chinntu"),
+        format!("{home}/Desktop/Chinntu"),
+        format!("{home}/Developer/Chinntu"),
+        format!("{home}/dev/Chinntu"),
+        format!("{home}/Code/Chinntu"),
+        format!("{home}/code/Chinntu"),
+        format!("{home}/repos/Chinntu"),
+        format!("{home}/github/Chinntu"),
     ];
     for p in &direct {
         let path = std::path::PathBuf::from(p);
@@ -327,8 +327,8 @@ fn find_project_root() -> Option<std::path::PathBuf> {
         }
     }
 
-    // 4. Shallow scan: look for OpenJarvis one level inside common parent dirs.
-    //    This catches clones like ~/Documents/my-stuff/OpenJarvis without
+    // 4. Shallow scan: look for Chinntu one level inside common parent dirs.
+    //    This catches clones like ~/Documents/my-stuff/Chinntu without
     //    needing to enumerate every possible intermediate folder.
     let scan_parents = [
         format!("{home}/Documents"),
@@ -346,13 +346,13 @@ fn find_project_root() -> Option<std::path::PathBuf> {
         let parent_path = std::path::PathBuf::from(parent);
         if let Ok(entries) = std::fs::read_dir(&parent_path) {
             for entry in entries.flatten() {
-                let candidate = entry.path().join("OpenJarvis");
+                let candidate = entry.path().join("Chinntu");
                 if candidate.join("pyproject.toml").exists() {
                     return Some(candidate);
                 }
-                // Also check if the entry itself is OpenJarvis (case-insensitive match)
+                // Also check if the entry itself is Chinntu (case-insensitive match)
                 if let Some(name) = entry.file_name().to_str() {
-                    if name.eq_ignore_ascii_case("openjarvis")
+                    if name.eq_ignore_ascii_case("chinntu")
                         && entry.path().join("pyproject.toml").exists()
                     {
                         return Some(entry.path());
@@ -372,8 +372,8 @@ fn project_root_near_executable(exe: &std::path::Path) -> Option<std::path::Path
         return Some(exe_dir.to_path_buf());
     }
 
-    // The Windows installer places the desktop executable in OpenJarvis/ and
-    // clones the matching Python backend into OpenJarvis/src/.
+    // The Windows installer places the desktop executable in Chinntu/ and
+    // clones the matching Python backend into Chinntu/src/.
     let installed_checkout = exe_dir.join("src");
     if installed_checkout.join("pyproject.toml").is_file() {
         return Some(installed_checkout);
@@ -393,7 +393,7 @@ fn project_root_near_executable(exe: &std::path::Path) -> Option<std::path::Path
 }
 
 // ---------------------------------------------------------------------------
-// BackendManager — owns the Ollama + Jarvis server child processes
+// BackendManager — owns the Ollama + Chinntu server child processes
 // ---------------------------------------------------------------------------
 
 struct ChildHandle {
@@ -418,10 +418,10 @@ fn spawn_owned_child(cmd: &mut tokio::process::Command) -> std::io::Result<tokio
     cmd.spawn()
 }
 
-/// Rolling buffer holding the most recent ~16 KB of jarvis stderr.
+/// Rolling buffer holding the most recent ~16 KB of chinntu stderr.
 ///
 /// Populated by a background drainer task spawned at boot so the pipe
-/// never fills and back-pressures `jarvis serve`; consumed by the boot
+/// never fills and back-pressures `chinntu serve`; consumed by the boot
 /// path when surfacing failure messages.
 type StderrTail = Arc<Mutex<Vec<u8>>>;
 
@@ -429,8 +429,8 @@ const STDERR_TAIL_LIMIT: usize = 16 * 1024;
 
 struct BackendManager {
     ollama: Option<ChildHandle>,
-    jarvis: Option<ChildHandle>,
-    jarvis_stderr_tail: StderrTail,
+    chinntu: Option<ChildHandle>,
+    chinntu_stderr_tail: StderrTail,
     boot_task: Option<tauri::async_runtime::JoinHandle<()>>,
 }
 
@@ -438,8 +438,8 @@ impl Default for BackendManager {
     fn default() -> Self {
         Self {
             ollama: None,
-            jarvis: None,
-            jarvis_stderr_tail: Arc::new(Mutex::new(Vec::new())),
+            chinntu: None,
+            chinntu_stderr_tail: Arc::new(Mutex::new(Vec::new())),
             boot_task: None,
         }
     }
@@ -454,10 +454,10 @@ impl BackendManager {
             // not-yet-registered child and cannot write config after reset.
             let _ = task.await;
         }
-        if let Some(ref mut h) = self.jarvis {
+        if let Some(ref mut h) = self.chinntu {
             h.kill().await;
         }
-        self.jarvis = None;
+        self.chinntu = None;
         if let Some(ref mut h) = self.ollama {
             h.kill().await;
         }
@@ -504,7 +504,7 @@ impl Default for SetupStatus {
     fn default() -> Self {
         Self {
             phase: "awaiting_source".into(),
-            detail: "Choose where OpenJarvis should run models.".into(),
+            detail: "Choose where Chinntu should run models.".into(),
             ollama_ready: false,
             server_ready: false,
             model_ready: false,
@@ -576,29 +576,29 @@ async fn endpoint_reachable(host: &str, timeout: Duration) -> bool {
     false
 }
 
-/// Outcome of waiting for `jarvis serve` to become healthy.
+/// Outcome of waiting for `chinntu serve` to become healthy.
 ///
 /// Unlike [`wait_for_url`] this differentiates "server is up but degraded"
 /// (HTTP 503 — usually inference engine failed to load) from "server never
 /// came up" and from "child process died before serving anything", because
 /// each needs a different user-facing message.
 #[derive(Debug)]
-enum JarvisStartResult {
+enum ChinntuStartResult {
     /// `/health` returned 2xx.
     Ready,
     /// Server replied 503. The body is the actionable message (typically
     /// "engine not ready" or a model-load error).
     ServiceUnavailable(String),
-    /// The `jarvis serve` child exited before `/health` returned 2xx.
+    /// The `chinntu serve` child exited before `/health` returned 2xx.
     EarlyExit { code: Option<i32>, stderr: String },
     /// Deadline elapsed without ever seeing 2xx or an early exit.
     Timeout,
 }
 
-/// Spawn a detached task that continuously drains `jarvis serve`'s
+/// Spawn a detached task that continuously drains `chinntu serve`'s
 /// stderr into a rolling tail buffer.
 ///
-/// We MUST keep reading stderr for as long as the child runs — `jarvis
+/// We MUST keep reading stderr for as long as the child runs — `chinntu
 /// serve` is chatty (engine load progress, request logs), and the OS
 /// pipe buffer is small (4 KB on Windows, 64 KB on Linux). Once full,
 /// the child's next stderr write blocks indefinitely and the server
@@ -608,7 +608,7 @@ enum JarvisStartResult {
 ///
 /// Returns immediately after spawning the task; the task ends naturally
 /// when the child closes stderr (i.e. exits).
-fn spawn_jarvis_stderr_drainer(mut stderr: tokio::process::ChildStderr, tail: StderrTail) {
+fn spawn_chinntu_stderr_drainer(mut stderr: tokio::process::ChildStderr, tail: StderrTail) {
     use tokio::io::AsyncReadExt;
     tokio::spawn(async move {
         let mut buf = vec![0u8; 4096];
@@ -633,25 +633,25 @@ fn spawn_jarvis_stderr_drainer(mut stderr: tokio::process::ChildStderr, tail: St
 ///
 /// Safe to call at any time; returns an empty string before the
 /// drainer has seen any bytes. Trimmed.
-async fn read_jarvis_stderr_tail(backend: &SharedBackend) -> String {
-    let tail = backend.lock().await.jarvis_stderr_tail.clone();
+async fn read_chinntu_stderr_tail(backend: &SharedBackend) -> String {
+    let tail = backend.lock().await.chinntu_stderr_tail.clone();
     let bytes = tail.lock().await.clone();
     String::from_utf8_lossy(&bytes).trim().to_string()
 }
 
-/// Poll `jarvis serve` health, watching the child process state so we
+/// Poll `chinntu serve` health, watching the child process state so we
 /// never wait 10 minutes for a process that crashed in the first second.
-async fn wait_for_jarvis_health(
+async fn wait_for_chinntu_health(
     url: &str,
     timeout: Duration,
     backend: &SharedBackend,
-) -> JarvisStartResult {
+) -> ChinntuStartResult {
     let client = match reqwest::Client::builder()
         .timeout(Duration::from_secs(2))
         .build()
     {
         Ok(c) => c,
-        Err(_) => return JarvisStartResult::Timeout,
+        Err(_) => return ChinntuStartResult::Timeout,
     };
     let deadline = tokio::time::Instant::now() + timeout;
     loop {
@@ -661,14 +661,14 @@ async fn wait_for_jarvis_health(
         // the full HTTP timeout window.
         let exit_status = {
             let mut mgr = backend.lock().await;
-            match mgr.jarvis.as_mut() {
+            match mgr.chinntu.as_mut() {
                 Some(h) => h.child.try_wait().ok().flatten(),
                 None => None,
             }
         };
         if let Some(status) = exit_status {
-            let stderr = read_jarvis_stderr_tail(backend).await;
-            return JarvisStartResult::EarlyExit {
+            let stderr = read_chinntu_stderr_tail(backend).await;
+            return ChinntuStartResult::EarlyExit {
                 code: status.code(),
                 stderr,
             };
@@ -679,14 +679,14 @@ async fn wait_for_jarvis_health(
             Ok(resp) => {
                 let status = resp.status();
                 if status.is_success() {
-                    return JarvisStartResult::Ready;
+                    return ChinntuStartResult::Ready;
                 }
                 if status == reqwest::StatusCode::SERVICE_UNAVAILABLE {
                     // Server is up but the inference engine is not. This
                     // is a terminal-for-us state — polling won't change
                     // anything; the user has to fix their engine config.
                     let body = resp.text().await.unwrap_or_default();
-                    return JarvisStartResult::ServiceUnavailable(body);
+                    return ChinntuStartResult::ServiceUnavailable(body);
                 }
                 // Other non-2xx (e.g. 404 during a brief routing-table
                 // warmup window) — fall through and keep polling.
@@ -698,7 +698,7 @@ async fn wait_for_jarvis_health(
         }
 
         if tokio::time::Instant::now() >= deadline {
-            return JarvisStartResult::Timeout;
+            return ChinntuStartResult::Timeout;
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
@@ -858,7 +858,7 @@ fn format_uv_sync_failure(root: &std::path::Path, exit_code: Option<i32>, stderr
 
 /// Strip AppImage-injected environment from a subprocess command (#455).
 ///
-/// When the OpenJarvis desktop binary is shipped as an AppImage, the AppImage
+/// When the Chinntu desktop binary is shipped as an AppImage, the AppImage
 /// runtime sets `LD_LIBRARY_PATH` (and friends) to the extracted-to-/tmp
 /// bundled lib dir. Any child we spawn inherits that env by default — but the
 /// children we spawn (`uv`, `ollama`, `git`) live outside the AppImage and
@@ -894,7 +894,7 @@ fn prepare_subprocess_for_appimage(cmd: &mut tokio::process::Command) {
 fn format_uv_sync_spawn_error(root: &std::path::Path, uv_bin: &str, err: &str) -> String {
     format!(
         "Could not run `uv sync`: {}. Verify uv is installed at \
-         `{}` and the OpenJarvis repo is at `{}`.",
+         `{}` and the Chinntu repo is at `{}`.",
         err,
         uv_bin,
         root.display(),
@@ -907,7 +907,7 @@ fn rust_toolchain_install_hint() -> &'static str {
             for its x64 Python backend. Install Rust from https://rustup.rs, run \
             `rustup target add --toolchain stable x86_64-pc-windows-msvc`, then relaunch.";
     #[cfg(not(all(target_os = "windows", target_arch = "aarch64")))]
-    "The desktop app needs the Rust toolchain to build `openjarvis_rust`. \
+    "The desktop app needs the Rust toolchain to build `chinntu_rust`. \
      Install Rust from https://rustup.rs. On Windows, also install Visual Studio \
      Build Tools with the C++ workload, then relaunch."
 }
@@ -937,8 +937,8 @@ fn prepare_backend_python(cmd: &mut tokio::process::Command) {
 fn looks_like_rust_extension_build_error(stderr: &str) -> bool {
     let lower = stderr.to_ascii_lowercase();
     [
-        "openjarvis-rust",
-        "openjarvis_rust",
+        "chinntu-rust",
+        "chinntu_rust",
         "maturin",
         "cargo",
         "rustc",
@@ -961,11 +961,11 @@ fn format_missing_rust_toolchain() -> String {
 fn format_extension_import_failure(root: &std::path::Path, stderr: &str) -> String {
     let tail = uv_sync_stderr_tail(stderr, 4000);
     format!(
-        "`openjarvis_rust` is still not importable after building. Last output:\n\n{}\n\n\
+        "`chinntu_rust` is still not importable after building. Last output:\n\n{}\n\n\
          Run these manually for the full build log:\n\n\
            cd {}\n\
            {}\n\
-           uv run python -c \"import openjarvis_rust\"",
+           uv run python -c \"import chinntu_rust\"",
         if tail.is_empty() {
             "(no stderr output)"
         } else {
@@ -991,12 +991,12 @@ fn add_cargo_bin_to_path(cmd: &mut tokio::process::Command) {
     }
 }
 
-async fn verify_openjarvis_rust_extension(
+async fn verify_chinntu_rust_extension(
     root: &std::path::Path,
     uv_bin: &str,
 ) -> Result<(), String> {
     let mut cmd = tokio::process::Command::new(uv_bin);
-    cmd.args(["run", "python", "-c", "import openjarvis_rust"])
+    cmd.args(["run", "python", "-c", "import chinntu_rust"])
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::piped())
         .current_dir(root);
@@ -1012,7 +1012,7 @@ async fn verify_openjarvis_rust_extension(
             Err(format_extension_import_failure(root, &stderr))
         }
         Err(e) => Err(format!(
-            "Could not verify `openjarvis_rust`: {}. Verify uv is installed at `{}`.",
+            "Could not verify `chinntu_rust`: {}. Verify uv is installed at `{}`.",
             e, uv_bin
         )),
     }
@@ -1029,14 +1029,14 @@ fn port_owner_hint() -> String {
 fn format_port_unavailable(port: u16, reason: &str) -> String {
     format!(
         "Port {} is not available: {}. Stop the process using that port or \
-         change the OpenJarvis port, then relaunch.\n\nTo identify it:\n  {}",
+         change the Chinntu port, then relaunch.\n\nTo identify it:\n  {}",
         port,
         reason,
         port_owner_hint(),
     )
 }
 
-fn check_jarvis_port_available() -> Result<(), String> {
+fn check_chinntu_port_available() -> Result<(), String> {
     match std::net::TcpListener::bind(("127.0.0.1", JARVIS_PORT)) {
         Ok(listener) => {
             drop(listener);
@@ -1222,8 +1222,8 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
             ));
             return;
         }
-        // Point `jarvis serve` at the user's endpoint by writing the engine
-        // host into ~/.openjarvis/config.toml (the env var alone is shadowed by
+        // Point `chinntu serve` at the user's endpoint by writing the engine
+        // host into ~/.chinntu/config.toml (the env var alone is shadowed by
         // the engine's non-empty default host in the Python layer).
         if let Some((engine, host)) = &plan.engine_host {
             if let Err(e) = set_engine_host_in_config(engine, host) {
@@ -1240,7 +1240,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
         }
     }
 
-    // Phase 3: Start jarvis serve
+    // Phase 3: Start chinntu serve
     {
         let mut s = status.lock().await;
         s.phase = "server".into();
@@ -1296,15 +1296,15 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
             return;
         }
 
-        let target_path = std::path::PathBuf::from(home_dir()).join("OpenJarvis");
+        let target_path = std::path::PathBuf::from(home_dir()).join("Chinntu");
         let clone_target = target_path.display().to_string();
 
         // If the directory exists but is not a valid project, don't overwrite
         if target_path.exists() && !target_path.join("pyproject.toml").exists() {
             let mut s = status.lock().await;
             s.error = Some(format!(
-                "{} exists but is not a valid OpenJarvis project. \
-                 Remove it and relaunch, or set OPENJARVIS_ROOT to the correct path.",
+                "{} exists but is not a valid Chinntu project. \
+                 Remove it and relaunch, or set CHINNTU_ROOT to the correct path.",
                 clone_target,
             ));
             return;
@@ -1312,7 +1312,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
 
         {
             let mut s = status.lock().await;
-            s.detail = "Downloading OpenJarvis (first launch)...".into();
+            s.detail = "Downloading Chinntu (first launch)...".into();
         }
 
         let mut clone_cmd = tokio::process::Command::new(&git_bin);
@@ -1321,7 +1321,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
                 "clone",
                 "--depth",
                 "1",
-                "https://github.com/open-jarvis/OpenJarvis.git",
+                "https://github.com/jogender18/Chinntu.git",
                 &clone_target,
             ])
             .stdout(std::process::Stdio::null())
@@ -1338,8 +1338,8 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     let mut s = status.lock().await;
                     s.error = Some(format!(
-                        "Failed to download OpenJarvis: {}. \
-                         Clone manually: git clone https://github.com/open-jarvis/OpenJarvis.git {}",
+                        "Failed to download Chinntu: {}. \
+                         Clone manually: git clone https://github.com/jogender18/Chinntu.git {}",
                         stderr.trim(),
                         clone_target,
                     ));
@@ -1348,8 +1348,8 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
                 Err(e) => {
                     let mut s = status.lock().await;
                     s.error = Some(format!(
-                        "Failed to download OpenJarvis: {}. \
-                         Clone manually: git clone https://github.com/open-jarvis/OpenJarvis.git {}",
+                        "Failed to download Chinntu: {}. \
+                         Clone manually: git clone https://github.com/jogender18/Chinntu.git {}",
                         e, clone_target,
                     ));
                     return;
@@ -1372,16 +1372,16 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
     //
     // The OLD behaviour was: any HTTP response (even 404) → `fuser -k 8000/tcp`
     // / `taskkill /PID /F`. That broke the legitimate case where a user had
-    // already started `jarvis serve` in a terminal and then launched the
+    // already started `chinntu serve` in a terminal and then launched the
     // desktop app — the app killed their server, then raced to spawn its
     // own, sometimes losing the race and hanging.
     //
     // New behaviour, by response shape:
-    //   * 2xx /health        — healthy jarvis serve. Attach to it; skip the
+    //   * 2xx /health        — healthy chinntu serve. Attach to it; skip the
     //                          uv-sync + spawn dance entirely. Done.
     //   * 503                — server is up but engine isn't ready. Surface
     //                          an actionable message; don't kill (matches
-    //                          our wait_for_jarvis_health 503 contract).
+    //                          our wait_for_chinntu_health 503 contract).
     //   * any other status   — something else is listening on the port. Tell
     //                          the user via the error banner instead of
     //                          force-killing a foreign service.
@@ -1426,7 +1426,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
                         Ok(true) => {
                             let mut s = status.lock().await;
                             s.error = Some(format!(
-                                "An API server is already running on port {}, but OpenJarvis cannot securely apply your new inference API key to a server it did not start. Stop that server, then try setup again.",
+                                "An API server is already running on port {}, but Chinntu cannot securely apply your new inference API key to a server it did not start. Stop that server, then try setup again.",
                                 JARVIS_PORT,
                             ));
                             return;
@@ -1465,7 +1465,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
                 s.error = Some(format!(
                     "An API server is already running on port {} but its \
                      inference engine isn't ready (HTTP 503). If this is your \
-                     `jarvis serve`, wait for it to finish loading and relaunch. \
+                     `chinntu serve`, wait for it to finish loading and relaunch. \
                      Otherwise, stop that service or change the port.",
                     JARVIS_PORT,
                 ));
@@ -1479,7 +1479,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
                 s.error = Some(format!(
                     "Port {} is already in use by another service (it answered \
                      /health with HTTP {}). Stop that service or change the \
-                     OpenJarvis port, then relaunch.\n\nTo identify it:\n  {}",
+                     Chinntu port, then relaunch.\n\nTo identify it:\n  {}",
                     JARVIS_PORT,
                     resp.status(),
                     port_owner_hint(),
@@ -1492,7 +1492,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
         }
     }
 
-    if let Err(err) = check_jarvis_port_available() {
+    if let Err(err) = check_chinntu_port_available() {
         let mut s = status.lock().await;
         s.error = Some(err);
         return;
@@ -1512,9 +1512,9 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
     // Previously we ran `uv sync` with both stdout AND stderr piped to
     // /dev/null and discarded the exit code (`let _ = …`). When `uv sync`
     // failed — Windows path issues, network problems, lockfile conflicts —
-    // the user saw no error, the boot continued, `uv run jarvis serve`
+    // the user saw no error, the boot continued, `uv run chinntu serve`
     // then ran in an under-provisioned venv, and the user waited the full
-    // 600s health-check window before getting "Jarvis server did not
+    // 600s health-check window before getting "Chinntu server did not
     // become healthy in time" with no actionable detail (issue #331).
     //
     // Now: capture stderr, check the exit status, surface a useful error
@@ -1535,7 +1535,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
             "inference-cloud",
             "--extra",
             "inference-google",
-            // openjarvis_rust lives in a uv dependency group (not the published
+            // chinntu_rust lives in a uv dependency group (not the published
             // `desktop` extra) so pip installs from PyPI don't require it (#584).
             "--group",
             "desktop-native",
@@ -1566,9 +1566,9 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
 
     {
         let mut s = status.lock().await;
-        s.detail = "Verifying Rust extension (openjarvis_rust)...".into();
+        s.detail = "Verifying Rust extension (chinntu_rust)...".into();
     }
-    if let Err(err) = verify_openjarvis_rust_extension(root, &uv_bin).await {
+    if let Err(err) = verify_chinntu_rust_extension(root, &uv_bin).await {
         let mut s = status.lock().await;
         s.error = Some(err);
         return;
@@ -1582,7 +1582,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
     let mut cmd = tokio::process::Command::new(&uv_bin);
     let mut serve_argv: Vec<String> = vec![
         "run".into(),
-        "jarvis".into(),
+        "chinntu".into(),
         "serve".into(),
         "--port".into(),
         JARVIS_PORT.to_string(),
@@ -1615,9 +1615,9 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
     for (key, value) in cloud_keys_for_inference(&cfg) {
         cmd.env(&key, &value);
     }
-    let jarvis_child = spawn_owned_child(&mut cmd);
+    let chinntu_child = spawn_owned_child(&mut cmd);
 
-    match jarvis_child {
+    match chinntu_child {
         Ok(mut child) => {
             // Start draining stderr immediately. If we wait until the
             // health check returns we risk filling the 4 KB Windows pipe
@@ -1625,18 +1625,18 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
             // it can bind its HTTP port — exactly the symptom in #309.
             let stderr_handle = child.stderr.take();
             let mut mgr = backend.lock().await;
-            let tail = mgr.jarvis_stderr_tail.clone();
-            mgr.jarvis = Some(ChildHandle { child });
+            let tail = mgr.chinntu_stderr_tail.clone();
+            mgr.chinntu = Some(ChildHandle { child });
             drop(mgr);
             if let Some(stderr) = stderr_handle {
-                spawn_jarvis_stderr_drainer(stderr, tail);
+                spawn_chinntu_stderr_drainer(stderr, tail);
             }
         }
         Err(e) => {
             let mut s = status.lock().await;
             s.error = Some(format!(
-                "Could not start jarvis server: {}. \
-                 Make sure uv is installed (https://astral.sh/uv) and the OpenJarvis repo is cloned at {}",
+                "Could not start chinntu server: {}. \
+                 Make sure uv is installed (https://astral.sh/uv) and the Chinntu repo is cloned at {}",
                 e,
                 root.display(),
             ));
@@ -1645,14 +1645,14 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
     }
 
     let server_url = format!("http://127.0.0.1:{}/health", JARVIS_PORT);
-    match wait_for_jarvis_health(&server_url, Duration::from_secs(600), &backend).await {
-        JarvisStartResult::Ready => {}
-        JarvisStartResult::ServiceUnavailable(body) => {
+    match wait_for_chinntu_health(&server_url, Duration::from_secs(600), &backend).await {
+        ChinntuStartResult::Ready => {}
+        ChinntuStartResult::ServiceUnavailable(body) => {
             let mut s = status.lock().await;
             s.error = Some(format!(
-                "Jarvis server is running but the inference engine is not available \
+                "Chinntu server is running but the inference engine is not available \
                  (HTTP 503). This usually means the configured model couldn't be loaded.\n\n\
-                 Check the server logs, or run 'uv run jarvis serve --port {}{}' \
+                 Check the server logs, or run 'uv run chinntu serve --port {}{}' \
                  from {} to see the engine error.\n\n\
                  Server response:\n{}",
                 JARVIS_PORT,
@@ -1667,7 +1667,7 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
             ));
             return;
         }
-        JarvisStartResult::EarlyExit { code, stderr } => {
+        ChinntuStartResult::EarlyExit { code, stderr } => {
             // `None` here means the OS didn't expose an exit code — on
             // Unix that's a signal kill (SIGKILL/SIGSEGV/...), on Windows
             // it means the process was terminated externally (Task
@@ -1678,10 +1678,10 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
             let mut s = status.lock().await;
             s.error = Some(if stderr.is_empty() {
                 format!(
-                    "Jarvis server exited (code {}) before becoming ready.\n\n\
+                    "Chinntu server exited (code {}) before becoming ready.\n\n\
                      No stderr output. Check that:\n\
                      1. uv is installed ({})\n\
-                     2. The OpenJarvis repo is at {}\n\
+                     2. The Chinntu repo is at {}\n\
                      3. 'uv sync' completes in that directory",
                     code_str,
                     uv_bin,
@@ -1689,27 +1689,27 @@ async fn boot_backend(backend: SharedBackend, status: SharedStatus) {
                 )
             } else {
                 format!(
-                    "Jarvis server exited (code {}) before becoming ready.\n\nStderr:\n{}",
+                    "Chinntu server exited (code {}) before becoming ready.\n\nStderr:\n{}",
                     code_str, stderr,
                 )
             });
             return;
         }
-        JarvisStartResult::Timeout => {
-            let stderr = read_jarvis_stderr_tail(&backend).await;
+        ChinntuStartResult::Timeout => {
+            let stderr = read_chinntu_stderr_tail(&backend).await;
             let mut s = status.lock().await;
             s.error = Some(if stderr.is_empty() {
                 format!(
-                    "Jarvis server did not become ready within 10 minutes. Check that:\n\
+                    "Chinntu server did not become ready within 10 minutes. Check that:\n\
                      1. uv is installed ({})\n\
-                     2. The OpenJarvis repo is at {}\n\
+                     2. The Chinntu repo is at {}\n\
                      3. Run 'uv sync' in that directory",
                     uv_bin,
                     root.display(),
                 )
             } else {
                 format!(
-                    "Jarvis server did not become ready within 10 minutes.\n\nStderr:\n{}",
+                    "Chinntu server did not become ready within 10 minutes.\n\nStderr:\n{}",
                     stderr,
                 )
             });
@@ -1765,7 +1765,7 @@ async fn start_backend(
 ) -> Result<(), String> {
     if read_configured_inference_config().is_none() {
         *status.lock().await = SetupStatus::default();
-        return Err("Choose an inference source before starting OpenJarvis.".into());
+        return Err("Choose an inference source before starting Chinntu.".into());
     }
     let b = backend.inner().clone();
     let s = status.inner().clone();
@@ -1969,17 +1969,17 @@ async fn fetch_models(api_url: String) -> Result<serde_json::Value, String> {
 }
 
 #[tauri::command]
-async fn run_jarvis_command(args: Vec<String>) -> Result<String, String> {
+async fn run_chinntu_command(args: Vec<String>) -> Result<String, String> {
     let uv_bin = resolve_bin("uv");
 
-    let mut cmd_args = vec!["run".to_string(), "jarvis".to_string()];
+    let mut cmd_args = vec!["run".to_string(), "chinntu".to_string()];
     cmd_args.extend(args.iter().cloned());
 
     let mut cmd = tokio::process::Command::new(&uv_bin);
     cmd.args(&cmd_args);
-    // Run from the project root so `uv run jarvis` resolves the OpenJarvis
+    // Run from the project root so `uv run chinntu` resolves the Chinntu
     // project regardless of the app's launch cwd. In a packaged install the
-    // cwd isn't the checkout, so without this `jarvis` isn't found and the
+    // cwd isn't the checkout, so without this `chinntu` isn't found and the
     // backend never starts — the UI then shows "Failed to get response"
     // (see #531).
     if let Some(ref root) = find_project_root() {
@@ -1994,7 +1994,7 @@ async fn run_jarvis_command(args: Vec<String>) -> Result<String, String> {
         let output = cmd
             .output()
             .await
-            .map_err(|e| format!("Failed to launch jarvis: {}", e))?;
+            .map_err(|e| format!("Failed to launch chinntu: {}", e))?;
         return if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).to_string())
         } else {
@@ -2002,7 +2002,7 @@ async fn run_jarvis_command(args: Vec<String>) -> Result<String, String> {
         };
     }
 
-    // `jarvis serve` is a long-running server that never exits. The old code
+    // `chinntu serve` is a long-running server that never exits. The old code
     // used `.output()`, which waits for the process to exit and so hung this
     // command forever — the "Start" button never resolved (#531). Spawn it
     // detached instead, drain stderr (a full 4 KB Windows pipe can otherwise
@@ -2011,11 +2011,11 @@ async fn run_jarvis_command(args: Vec<String>) -> Result<String, String> {
         .stderr(std::process::Stdio::piped());
     let mut child = cmd
         .spawn()
-        .map_err(|e| format!("Failed to launch jarvis serve: {}", e))?;
+        .map_err(|e| format!("Failed to launch chinntu serve: {}", e))?;
 
     let tail: StderrTail = Arc::new(Mutex::new(Vec::new()));
     if let Some(stderr) = child.stderr.take() {
-        spawn_jarvis_stderr_drainer(stderr, tail.clone());
+        spawn_chinntu_stderr_drainer(stderr, tail.clone());
     }
 
     let client = reqwest::Client::builder()
@@ -2031,7 +2031,7 @@ async fn run_jarvis_command(args: Vec<String>) -> Result<String, String> {
         if let Ok(Some(status)) = child.try_wait() {
             let stderr = String::from_utf8_lossy(tail.lock().await.as_slice()).into_owned();
             return Err(format!(
-                "jarvis serve exited (code {:?}) before becoming healthy:\n{}",
+                "chinntu serve exited (code {:?}) before becoming healthy:\n{}",
                 status.code(),
                 stderr.trim()
             ));
@@ -2041,14 +2041,14 @@ async fn run_jarvis_command(args: Vec<String>) -> Result<String, String> {
                 // Leave the server running (the Child is detached on drop —
                 // kill_on_drop defaults to false); `stop` tears it down.
                 return Ok(format!(
-                    "jarvis serve is ready on http://127.0.0.1:{}",
+                    "chinntu serve is ready on http://127.0.0.1:{}",
                     JARVIS_PORT
                 ));
             }
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "jarvis serve did not become healthy on port {} within 120s.",
+                "chinntu serve did not become healthy on port {} within 120s.",
                 JARVIS_PORT
             ));
         }
@@ -2150,11 +2150,11 @@ async fn submit_savings(
 // Cloud API key management
 // ---------------------------------------------------------------------------
 
-const SECURE_KEY_SERVICE: &str = "OpenJarvis Cloud Keys";
+const SECURE_KEY_SERVICE: &str = "Chinntu Cloud Keys";
 // A first-run custom credential is kept in its own secure-storage slot until
 // the managed backend has passed every readiness gate.  In particular, do not
 // overwrite an existing <ENGINE>_API_KEY while setup can still be cancelled.
-const PENDING_INFERENCE_API_KEY: &str = "OPENJARVIS_PENDING_INFERENCE_API_KEY";
+const PENDING_INFERENCE_API_KEY: &str = "CHINNTU_PENDING_INFERENCE_API_KEY";
 const MANAGED_CLOUD_KEY_NAMES: &[&str] = &[
     "OPENAI_API_KEY",
     "ANTHROPIC_API_KEY",
@@ -2170,7 +2170,7 @@ const MANAGED_CLOUD_KEY_NAMES: &[&str] = &[
 fn legacy_cloud_keys_path() -> std::path::PathBuf {
     let home = home_dir();
     std::path::PathBuf::from(home)
-        .join(".openjarvis")
+        .join(".chinntu")
         .join("cloud-keys.env")
 }
 
@@ -2401,7 +2401,7 @@ async fn reload_cloud_keys_for_owned_backend_at(
     // child and let an unrelated process claim the port between the ownership
     // check and the credential POST.
     let mut manager = backend.lock().await;
-    let Some(handle) = manager.jarvis.as_mut() else {
+    let Some(handle) = manager.chinntu.as_mut() else {
         return;
     };
     if !matches!(handle.child.try_wait(), Ok(None)) {
@@ -2527,7 +2527,7 @@ async fn delete_ollama_model(model_name: String) -> Result<serde_json::Value, St
 }
 
 // ---------------------------------------------------------------------------
-// Inference-source selection (~/.openjarvis/inference.json)
+// Inference-source selection (~/.chinntu/inference.json)
 // ---------------------------------------------------------------------------
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -2565,10 +2565,10 @@ fn legacy_config_is_confirmed() -> bool {
     true
 }
 
-/// Path to the inference-source config (~/.openjarvis/inference.json).
+/// Path to the inference-source config (~/.chinntu/inference.json).
 fn inference_config_path() -> std::path::PathBuf {
     std::path::PathBuf::from(home_dir())
-        .join(".openjarvis")
+        .join(".chinntu")
         .join("inference.json")
 }
 
@@ -2891,13 +2891,13 @@ fn upsert_engine_host(existing: &str, engine: &str, host: &str) -> Result<String
     Ok(doc.to_string())
 }
 
-/// Write the custom-endpoint host into ~/.openjarvis/config.toml so
-/// `jarvis serve` (which reads that file via load_config) points at it.
+/// Write the custom-endpoint host into ~/.chinntu/config.toml so
+/// `chinntu serve` (which reads that file via load_config) points at it.
 /// The `<ENGINE>_HOST` env var is unreliable — it is shadowed by the engine's
 /// non-empty default host in the Python layer — so config.toml is the override.
 fn set_engine_host_in_config(engine: &str, host: &str) -> Result<(), String> {
     let path = std::path::PathBuf::from(home_dir())
-        .join(".openjarvis")
+        .join(".chinntu")
         .join("config.toml");
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
@@ -2986,7 +2986,7 @@ mod native_overlay {
 
     fn conversation_path() -> std::path::PathBuf {
         std::path::PathBuf::from(super::home_dir())
-            .join(".openjarvis")
+            .join(".chinntu")
             .join("overlay-conversation.json")
     }
 
@@ -3049,9 +3049,9 @@ mod native_overlay {
     /// Build the native overlay panel.  Call once during app setup.
     pub unsafe fn create(html: &str, api_port: u16) {
         // --- Custom NSPanel subclass that accepts keyboard input ------
-        if Class::get("JarvisOverlayPanel").is_none() {
+        if Class::get("ChinntuOverlayPanel").is_none() {
             let sup = Class::get("NSPanel").unwrap();
-            let mut decl = ClassDecl::new("JarvisOverlayPanel", sup).unwrap();
+            let mut decl = ClassDecl::new("ChinntuOverlayPanel", sup).unwrap();
             extern "C" fn yes(_: &Object, _: Sel) -> BOOL {
                 YES
             }
@@ -3063,9 +3063,9 @@ mod native_overlay {
         }
 
         // --- WKNavigationDelegate — re-apply transparency after load --
-        if Class::get("JarvisOverlayNavDelegate").is_none() {
+        if Class::get("ChinntuOverlayNavDelegate").is_none() {
             let sup = Class::get("NSObject").unwrap();
-            let mut decl = ClassDecl::new("JarvisOverlayNavDelegate", sup).unwrap();
+            let mut decl = ClassDecl::new("ChinntuOverlayNavDelegate", sup).unwrap();
             extern "C" fn did_finish(_: &Object, _: Sel, wv: *mut Object, _nav: *mut Object) {
                 unsafe {
                     force_transparent(wv);
@@ -3079,9 +3079,9 @@ mod native_overlay {
         }
 
         // --- WKScriptMessageHandler so JS can call hide() ------------
-        if Class::get("JarvisOverlayMsgHandler").is_none() {
+        if Class::get("ChinntuOverlayMsgHandler").is_none() {
             let sup = Class::get("NSObject").unwrap();
-            let mut decl = ClassDecl::new("JarvisOverlayMsgHandler", sup).unwrap();
+            let mut decl = ClassDecl::new("ChinntuOverlayMsgHandler", sup).unwrap();
             extern "C" fn on_msg(_: &Object, _: Sel, _ctrl: *mut Object, msg: *mut Object) {
                 unsafe {
                     let body: *mut Object = msg_send![msg, body];
@@ -3121,7 +3121,7 @@ mod native_overlay {
         // NSWindowStyleMaskNonactivatingPanel = 1 << 7
         let style: u64 = 1 << 7;
 
-        let cls = Class::get("JarvisOverlayPanel").unwrap();
+        let cls = Class::get("ChinntuOverlayPanel").unwrap();
         let panel: *mut Object = msg_send![cls, alloc];
         let panel: *mut Object = msg_send![panel,
             initWithContentRect: frame
@@ -3148,7 +3148,7 @@ mod native_overlay {
         let cfg: *mut Object = msg_send![cfg, init];
 
         // Attach message handler ("overlay" channel)
-        let hcls = Class::get("JarvisOverlayMsgHandler").unwrap();
+        let hcls = Class::get("ChinntuOverlayMsgHandler").unwrap();
         let handler: *mut Object = msg_send![hcls, alloc];
         let handler: *mut Object = msg_send![handler, init];
         let uc: *mut Object = msg_send![cfg, userContentController];
@@ -3167,7 +3167,7 @@ mod native_overlay {
         force_transparent(wv);
 
         // Set navigation delegate so we re-apply after page loads
-        let nav_cls = Class::get("JarvisOverlayNavDelegate").unwrap();
+        let nav_cls = Class::get("ChinntuOverlayNavDelegate").unwrap();
         let nav_del: *mut Object = msg_send![nav_cls, alloc];
         let nav_del: *mut Object = msg_send![nav_del, init];
         let _: () = msg_send![wv, setNavigationDelegate: nav_del];
@@ -3379,7 +3379,7 @@ pub fn run() {
             let health = MenuItemBuilder::with_id("health", "Health: starting...")
                 .enabled(false)
                 .build(app)?;
-            let quit = MenuItemBuilder::with_id("quit", "Quit OpenJarvis").build(app)?;
+            let quit = MenuItemBuilder::with_id("quit", "Quit Chinntu").build(app)?;
 
             let menu = MenuBuilder::new(app)
                 .item(&show)
@@ -3391,7 +3391,7 @@ pub fn run() {
 
             let _tray = TrayIconBuilder::with_id("main")
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("OpenJarvis")
+                .tooltip("Chinntu")
                 .menu(&menu)
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "show" => {
@@ -3461,7 +3461,7 @@ pub fn run() {
             search_memory,
             fetch_agents,
             fetch_models,
-            run_jarvis_command,
+            run_chinntu_command,
             fetch_savings,
             submit_savings,
             transcribe_audio,
@@ -3477,7 +3477,7 @@ pub fn run() {
             get_overlay_conversation,
         ])
         .build(tauri::generate_context!())
-        .expect("error while building OpenJarvis Desktop")
+        .expect("error while building Chinntu Desktop")
         .run(move |_app, event| {
             if let tauri::RunEvent::ExitRequested { .. } = event {
                 let b = backend.clone();
@@ -3556,7 +3556,7 @@ mod tests {
             .unwrap()
             .as_nanos();
         std::env::temp_dir().join(format!(
-            "openjarvis-{}-{}-{}",
+            "chinntu-{}-{}-{}",
             label,
             std::process::id(),
             nonce
@@ -3566,15 +3566,15 @@ mod tests {
     #[test]
     fn project_root_installed_desktop_finds_checkout_beside_executable() {
         let root = unique_test_root("installed-desktop-root");
-        let install_dir = root.join("localappdata").join("OpenJarvis");
+        let install_dir = root.join("localappdata").join("Chinntu");
         let bundled_checkout = install_dir.join("src");
-        let unrelated_clone = root.join("home").join("OpenJarvis");
+        let unrelated_clone = root.join("home").join("Chinntu");
         std::fs::create_dir_all(&bundled_checkout).unwrap();
         std::fs::create_dir_all(&unrelated_clone).unwrap();
         std::fs::write(bundled_checkout.join("pyproject.toml"), "[project]\n").unwrap();
         std::fs::write(unrelated_clone.join("pyproject.toml"), "[project]\n").unwrap();
 
-        let exe = install_dir.join("openjarvis-desktop.exe");
+        let exe = install_dir.join("chinntu-desktop.exe");
         assert_eq!(project_root_near_executable(&exe), Some(bundled_checkout));
 
         std::fs::remove_dir_all(root).unwrap();
@@ -3587,7 +3587,7 @@ mod tests {
         std::fs::create_dir_all(&exe_dir).unwrap();
         std::fs::write(root.join("pyproject.toml"), "[project]\n").unwrap();
 
-        let exe = exe_dir.join("openjarvis-desktop");
+        let exe = exe_dir.join("chinntu-desktop");
         assert_eq!(project_root_near_executable(&exe), Some(root.clone()));
 
         std::fs::remove_dir_all(root).unwrap();
@@ -3626,12 +3626,12 @@ mod tests {
     #[test]
     fn failure_message_includes_exit_code_and_tail_and_hint() {
         let msg = format_uv_sync_failure(
-            Path::new("/home/u/.openjarvis/src"),
+            Path::new("/home/u/.chinntu/src"),
             Some(2),
             "error: failed to resolve numpy==2.1.3",
         );
         assert!(msg.contains("exit 2"));
-        assert!(msg.contains("/home/u/.openjarvis/src"));
+        assert!(msg.contains("/home/u/.chinntu/src"));
         assert!(msg.contains("failed to resolve numpy==2.1.3"));
         assert!(msg.contains(DESKTOP_UV_SYNC_COMMAND)); // actionable next step
     }
@@ -3661,16 +3661,16 @@ mod tests {
         let msg = format_missing_rust_toolchain();
         assert!(msg.contains("cargo"));
         assert!(msg.contains("https://rustup.rs"));
-        assert!(msg.contains("openjarvis_rust"));
+        assert!(msg.contains("chinntu_rust"));
         assert!(msg.contains("Visual Studio Build Tools"));
     }
 
     #[test]
     fn uv_sync_rust_failure_mentions_toolchain() {
         let msg = format_uv_sync_failure(
-            Path::new("C:\\Users\\me\\OpenJarvis"),
+            Path::new("C:\\Users\\me\\Chinntu"),
             Some(1),
-            "maturin failed: linker `link.exe` not found while building openjarvis-rust",
+            "maturin failed: linker `link.exe` not found while building chinntu-rust",
         );
         assert!(msg.contains("exit 1"));
         assert!(msg.contains("link.exe"));
@@ -3681,12 +3681,12 @@ mod tests {
     #[test]
     fn extension_import_failure_names_verification_command() {
         let msg = format_extension_import_failure(
-            Path::new("C:\\Users\\me\\OpenJarvis"),
-            "ModuleNotFoundError: No module named 'openjarvis_rust'",
+            Path::new("C:\\Users\\me\\Chinntu"),
+            "ModuleNotFoundError: No module named 'chinntu_rust'",
         );
-        assert!(msg.contains("openjarvis_rust"));
+        assert!(msg.contains("chinntu_rust"));
         assert!(msg.contains(DESKTOP_UV_SYNC_COMMAND));
-        assert!(msg.contains("uv run python -c \"import openjarvis_rust\""));
+        assert!(msg.contains("uv run python -c \"import chinntu_rust\""));
         assert!(msg.contains("ModuleNotFoundError"));
     }
 
@@ -3978,7 +3978,7 @@ mod tests {
     #[test]
     fn pending_config_rolls_back_unless_boot_confirms_it() {
         let root = std::env::temp_dir().join(format!(
-            "openjarvis-pending-inference-{}",
+            "chinntu-pending-inference-{}",
             std::process::id()
         ));
         std::fs::create_dir_all(&root).unwrap();
@@ -4278,10 +4278,10 @@ mod tests {
 
     #[test]
     fn owned_child_process_helper() {
-        let Some(started) = std::env::var_os("OPENJARVIS_OWNED_CHILD_STARTED") else {
+        let Some(started) = std::env::var_os("CHINNTU_OWNED_CHILD_STARTED") else {
             return;
         };
-        let completed = std::env::var_os("OPENJARVIS_OWNED_CHILD_COMPLETED").unwrap();
+        let completed = std::env::var_os("CHINNTU_OWNED_CHILD_COMPLETED").unwrap();
         std::fs::write(started, "started").unwrap();
         std::thread::sleep(std::time::Duration::from_millis(500));
         std::fs::write(completed, "completed").unwrap();
@@ -4294,7 +4294,7 @@ mod tests {
             .unwrap()
             .as_nanos();
         let root = std::env::temp_dir().join(format!(
-            "openjarvis-owned-child-{}-{unique}",
+            "chinntu-owned-child-{}-{unique}",
             std::process::id()
         ));
         std::fs::create_dir_all(&root).unwrap();
@@ -4311,8 +4311,8 @@ mod tests {
                 "tests::owned_child_process_helper",
                 "--nocapture",
             ])
-            .env("OPENJARVIS_OWNED_CHILD_STARTED", started_for_child)
-            .env("OPENJARVIS_OWNED_CHILD_COMPLETED", completed_for_child)
+            .env("CHINNTU_OWNED_CHILD_STARTED", started_for_child)
+            .env("CHINNTU_OWNED_CHILD_COMPLETED", completed_for_child)
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null());
             let child = spawn_owned_child(&mut cmd).unwrap();

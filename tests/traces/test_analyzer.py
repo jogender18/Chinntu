@@ -5,9 +5,9 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from openjarvis.core.types import StepType, Trace, TraceStep
-from openjarvis.traces.analyzer import TraceAnalyzer
-from openjarvis.traces.store import TraceStore
+from chinntu.core.types import StepType, Trace, TraceStep
+from chinntu.traces.analyzer import TraceAnalyzer
+from chinntu.traces.store import TraceStore
 
 
 def _make_trace(

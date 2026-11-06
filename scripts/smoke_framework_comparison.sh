@@ -35,7 +35,7 @@ cd "$REPO_ROOT"
 
 echo "==> Verifying commit pins"
 uv run python -c "
-from openjarvis.evals.comparison.third_party import (
+from chinntu.evals.comparison.third_party import (
     load_third_party_config, verify_commit_pin,
 )
 cfg = load_third_party_config()
@@ -50,19 +50,19 @@ mkdir -p results/smoke
 CONFIG_DIR="results/smoke/configs"
 mkdir -p "$CONFIG_DIR"
 SMOKE_BENCHES=(toolcall15 pinchbench gaia)
-SMOKE_FRAMEWORKS=(hermes openclaw openjarvis)
+SMOKE_FRAMEWORKS=(hermes openclaw chinntu)
 SMOKE_MODEL="qwen-9b"
 
 for fwk in "${SMOKE_FRAMEWORKS[@]}"; do
   for bench in "${SMOKE_BENCHES[@]}"; do
-    uv run python -m openjarvis.evals.comparison.make_configs \
+    uv run python -m chinntu.evals.comparison.make_configs \
       --framework "$fwk" \
       --model "$SMOKE_MODEL" \
       --benchmark "$bench" \
       --output-dir "$CONFIG_DIR" >/dev/null
     config="${CONFIG_DIR}/${bench}-${fwk}-${SMOKE_MODEL}.toml"
     run_dir="results/smoke/${fwk}/${SMOKE_MODEL}/${bench}/"
-    JARVIS_BACKEND_BASE_URL="$JARVIS_MOCK_LLM_URL" uv run python - "$config" "$run_dir" <<'PY'
+    JARVIS_BACKEND_BASE_URL="$CHINNTU_MOCK_LLM_URL" uv run python - "$config" "$run_dir" <<'PY'
 from pathlib import Path
 import re
 import sys
@@ -76,15 +76,15 @@ path.write_text(text)
 PY
     echo "  ▸ $fwk × $bench"
     mkdir -p "$run_dir"
-    JARVIS_BACKEND_BASE_URL="$JARVIS_MOCK_LLM_URL" \
+    JARVIS_BACKEND_BASE_URL="$CHINNTU_MOCK_LLM_URL" \
     JARVIS_BACKEND_API_KEY="${JARVIS_BACKEND_API_KEY:-smoke}" \
-    uv run python -m openjarvis.evals run --config "$config" \
+    uv run python -m chinntu.evals run --config "$config" \
       || echo "    FAILED (continuing)"
   done
 done
 
 echo "==> Generating T1 from smoke results"
-uv run python -m openjarvis.evals.comparison.table_gen \
+uv run python -m chinntu.evals.comparison.table_gen \
     --results-glob "results/smoke/**/*.summary.json" \
     --tables T1 \
     --output-dir results/smoke/tables/
