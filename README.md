@@ -50,6 +50,17 @@ Pick your platform and run one command. Each installer handles [uv](https://docs
 
 Then `chinntu` to start. The Rust extension and larger models continue downloading in the background; `chinntu doctor` shows status.
 
+For hands-free local chat, install voice support and use the wake word:
+
+```bash
+uv sync --extra speech --extra voice
+uv run chinntu chat --model llama3.2:3b --wake-word "hey chinntu"
+```
+
+Keep that command running, then say “Hey Chinntu” followed by your question. This
+uses the configured speech-to-text and text-to-speech backends; it does not listen
+when Chinntu is closed.
+
 Platform-specific notes (WSL2 setup, native-Windows scheduled-task service, desktop prerequisites, manual / contributor install): see the [installation docs](https://open-jarvis.github.io/OpenJarvis/getting-started/install/).
 
 ## Quick Start

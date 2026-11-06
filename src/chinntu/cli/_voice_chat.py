@@ -126,6 +126,39 @@ def read_voice_input(console: Any, session: VoiceSession) -> Optional[str] | obj
     return typed if typed else record_voice(console, session)
 
 
+def read_wake_word_input(
+    console: Any,
+    session: VoiceSession,
+    wake_word: str = "hey chinntu",
+) -> Optional[str] | object:
+    """Keep listening until a transcript contains the configured wake word."""
+    normalized_wake_word = " ".join(wake_word.lower().split())
+    if not normalized_wake_word:
+        raise ValueError("wake_word must not be empty")
+
+    while True:
+        result = record_voice(console, session)
+        if result is VOICE_EXIT:
+            return VOICE_EXIT
+        if not result:
+            continue
+
+        text = str(result).strip()
+        lowered = " ".join(text.lower().split())
+        marker = lowered.find(normalized_wake_word)
+        if marker < 0:
+            console.print(
+                f"[dim]Waiting for “{_terminal_safe_text(wake_word)}”…[/dim]"
+            )
+            continue
+
+        remainder = text[marker + len(normalized_wake_word) :].strip(" ,.!?:;")
+        if remainder:
+            return remainder
+        console.print("[bold magenta]Wake word detected.[/bold magenta]")
+        return record_voice(console, session)
+
+
 def record_voice(
     console: Any,
     session: VoiceSession | None = None,
@@ -211,4 +244,11 @@ def speak(text: str, console: Any, session: VoiceSession | None = None) -> None:
     )
 
 
-__all__ = ["VOICE_EXIT", "VoiceSession", "read_voice_input", "record_voice", "speak"]
+__all__ = [
+    "VOICE_EXIT",
+    "VoiceSession",
+    "read_voice_input",
+    "read_wake_word_input",
+    "record_voice",
+    "speak",
+]

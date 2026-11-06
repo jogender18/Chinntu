@@ -13,7 +13,13 @@ from rich.markup import escape
 
 from chinntu.cli._runtime_panel import runtime_cli_options
 from chinntu.cli._tool_names import resolve_tool_names
-from chinntu.cli._voice_chat import VOICE_EXIT, VoiceSession, read_voice_input, speak
+from chinntu.cli._voice_chat import (
+    VOICE_EXIT,
+    VoiceSession,
+    read_voice_input,
+    read_wake_word_input,
+    speak,
+)
 from chinntu.core.config import load_config
 from chinntu.core.events import EventBus
 from chinntu.core.types import Message, Role
@@ -78,6 +84,12 @@ def _read_input(prompt: str = "You> ") -> Optional[str]:
     default=False,
     help="Enable voice I/O: mic input with silence detection + TTS response playback.",
 )
+@click.option(
+    "--wake-word",
+    default=None,
+    metavar="PHRASE",
+    help="Keep listening and respond only after PHRASE (for example: 'hey chinntu').",
+)
 @runtime_cli_options
 def chat(
     engine_key: str | None,
@@ -88,6 +100,7 @@ def chat(
     system_prompt: str | None,
     persona_name: str | None,
     voice_mode: bool,
+    wake_word: str | None,
     num_ctx: int | None,
     num_gpu: int | None,
     skip_runtime_panel: bool,
@@ -293,12 +306,19 @@ def chat(
 
     # Keep voice state outside the core chat path so picker/runtime changes can
     # be layered independently. Loaded speech models live for this session.
+    if wake_word and not voice_mode:
+        voice_mode = True
     voice_session = VoiceSession(config) if voice_mode else None
 
     # Print banner
     voice_hint = (
-        "  [magenta]Voice mode ON[/magenta] — type normally, or press Enter "
-        "to speak; silence stops recording.\n"
+        (
+            f"  [magenta]Wake-word mode ON[/magenta] — say "
+            f"{escape(wake_word or 'hey chinntu')!r}, then speak.\n"
+            if wake_word
+            else "  [magenta]Voice mode ON[/magenta] — type normally, or press Enter "
+            "to speak; silence stops recording.\n"
+        )
         if voice_mode
         else ""
     )
@@ -369,7 +389,11 @@ def chat(
 
         if voice_mode:
             assert voice_session is not None
-            result = read_voice_input(console, voice_session)
+            result = (
+                read_wake_word_input(console, voice_session, wake_word)
+                if wake_word
+                else read_voice_input(console, voice_session)
+            )
             if result is VOICE_EXIT:
                 console.print("\n[dim]Goodbye![/dim]")
                 break
